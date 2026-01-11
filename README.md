@@ -1,6 +1,6 @@
 An example of using go for automation. Similar to ansible but in a go way
 
-each project has this structure
+Each project has this structure
 
 `inventory` similar to ansible inventory, use the lib https://github.com/relex/aini to parse into hosts/group to use
 Currently aini does not support anisble generator inventory style. Creating using ini is really cumber some, I might implement it in the future
@@ -16,3 +16,17 @@ Can be reuse by playbooks using go import. Not executable by itself.
 
 `main.go` compile into one executable, run feed it with a host or a playbook exec file name it will run that. An option to list hosts and inventory. Inventory can be external file/dir or use embed to embed into the binary and extract on the fly to allow user can edit it later on.
 
+## Why not just use ansible
+
+- Cz I can do it in go! Fast, simple and flexible.
+- Can build it into one executable file and run without the need to install whole ansible python eco system
+
+The idea is that with inventory system in place "github.com/relex/aini" we can template commands and exec it.
+
+I have prepared many short cut, utilites in two other libraries ready to be used for this project template.
+
+https://github.com/sunshine69/golang-tools - Provide many convinient devops operations functions and make to use go template easier.
+
+https://github.com/sunshine69/automation-go - Deeper into the DevOps domain, with jinja2 support (use the github.com/nikolalohinski/gonja but focus on devops usage)
+
+Still work in progress but you know the ideas ^^^

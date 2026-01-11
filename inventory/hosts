@@ -1,0 +1,33 @@
+# declare hosts
+deploy_commercial_ordering_dev
+deploy_commercial_ordering_uat
+deploy_commercial_ordering_prod
+
+# split name into groups. If member is hosts then it is not children
+[deploy_commercial_ordering]
+deploy_commercial_ordering_dev
+deploy_commercial_ordering_uat
+deploy_commercial_ordering_prod
+
+# Group and group children relationship
+[deploy_commercial:children]
+deploy_commercial_ordering
+
+[dev]
+deploy_commercial_ordering_dev
+
+[uat]
+deploy_commercial_ordering_uat
+
+[prod]
+deploy_commercial_ordering_prod
+
+[commercial:children]
+deploy_commercial_ordering
+
+[ordering:children]
+deploy_commercial_ordering
+
+[deploy:children]
+deploy_commercial
+

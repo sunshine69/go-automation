@@ -1,1 +1,3 @@
-complex_var: "complex-var-{{ complex_var_env }}"
+complex_var:
+  f1: "complex-var- complex_var_env | upper "
+  f2: "Nothing f2"

@@ -4,8 +4,8 @@ go 1.25.5
 
 require (
 	github.com/relex/aini v1.6.0
-	github.com/sunshine69/automation-go v0.0.0-20260113113628-e65add973383
-	github.com/sunshine69/golang-tools/utils v0.0.0-20260111061804-4b3a86dc1b3e
+	github.com/sunshine69/automation-go v0.0.0-20260113120134-1f2cb573262e
+	github.com/sunshine69/golang-tools/utils v0.0.0-20260114100515-fdde0bb6832f
 	gopkg.in/yaml.v3 v3.0.1
 )
 

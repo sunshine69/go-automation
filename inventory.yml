@@ -1,0 +1,60 @@
+# inventory.config file in YAML format
+# remember to enable this inventory plugin in the ansible.cfg before using
+# View the output using `ansible-inventory -i inventory.config --list`
+
+plugin: generator
+hosts:
+  name: "{{ operation }}_{{ product }}_{{ env }}_{{ os }}_{{ location }}_runner"
+  parents:
+    - name: "{{ operation }}_{{ product }}_{{ env }}_{{ os }}_{{ location }}"
+      parents:
+        - name: "{{ operation }}_{{ product }}_{{ env }}"
+          parents:
+            - name: "{{ operation }}_{{ product }}"
+              parents:
+                - name: "{{ operation }}"
+                  vars:
+                    operation: "{{ operation }}"
+                - name: "{{ product }}"
+            - name: "{{ product }}_{{ env }}"
+              parents:
+                - name: "{{ product }}"
+                  vars:
+                    product: "{{ product }}"
+                - name: "{{ env }}"
+                  vars:
+                    env: "{{ env }}"
+        - name: "{{ env }}_{{ location }}"
+          parents:
+            - name: "{{ location }}"
+              vars:
+                location: "{{ location }}"
+        - name: "{{ os }}"
+        - name: runner
+
+layers:
+  operation:
+    - deploy
+    - build
+    - get_k8s_logs
+  product:
+  # one repo map to one product name (projectName). This may have multiple applications (map to multiple helm packages)
+  # one repo will have one ingress DNS. Each application uses the same ingress but may have different route prefix
+    - slingshot
+
+  env:
+    - dev
+    - qc
+    - uat
+    - et
+    - prod
+
+
+  os:
+    - tanzu
+
+
+  location:
+    - BNE
+    - SYD
+

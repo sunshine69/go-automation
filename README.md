@@ -10,7 +10,8 @@ Currently aini does not support anisble generator inventory style. Creating usin
 each play is a a directory for the playname and the playname is the go sub package name. Each play is one executable with extra vars. Can run alone or trigger by the main prog later.
 
 `tasks` list all go tasks .go files used by plays (sharable)
-Can be reuse by playbooks using go import. Not executable by itself.
+Can be reuse by playbooks using go import. Not executable by itself. It should have a Run(*Vars map[string]string,  args ...any) to run.
+In the playbook call Run and pass the Var into it. Tasks can also change/add vars into the map Vars.
 
 `mods` - List all go mods files, that is built and copied to remote to exec using the utils ssh tool
 

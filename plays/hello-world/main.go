@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/relex/aini"
-	u "github.com/sunshine69/golang-tools/utils"
 	"os"
 	"path/filepath"
+
+	"github.com/relex/aini"
+	ag "github.com/sunshine69/automation-go/lib"
+	u "github.com/sunshine69/golang-tools/utils"
 )
 
 var (
@@ -33,10 +35,25 @@ func main() {
 	execHost.Vars["deploy_var"] = "new value override"
 
 	// From now on you can use inventory vars in your exec command, template command etc whatever you need
-	println(u.JsonDump(execHost.Vars, ""))
+	println("*** DUMP ALL VARS ***", u.JsonDump(execHost.Vars, ""))
+
+	// Flattern all vars to resovle into values
+	vars := u.Must(ag.FlattenAllVars(StringMapToAnyMap(execHost.Vars)))
+	println("*** DUMP ALL FLATTERN VARS ***", u.JsonDump(vars, ""))
+
 	o := u.Must(u.RunSystemCommandV2(u.GoTemplateString(`echo env: {{.env}}
 echo deploy_var: {{.deploy_var}}
-	`, execHost.Vars), true))
-	println(o)
+	`, vars), true))
+	println("*** OUTPUT COMMAND ***", o)
 
+	println("complex_var: ", vars["complex_var"].(string))
+}
+
+// StringMapToAnyMap converts map[string]string to map[string]any
+func StringMapToAnyMap(m map[string]string) map[string]any {
+	result := make(map[string]any, len(m))
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
 }

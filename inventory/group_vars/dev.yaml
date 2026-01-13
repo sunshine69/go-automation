@@ -1,1 +1,2 @@
 env: dev
+complex_var_env: 'This is complex_var_env from dev'

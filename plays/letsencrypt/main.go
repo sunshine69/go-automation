@@ -30,7 +30,7 @@ import (
 	u "github.com/sunshine69/golang-tools/utils"
 )
 
-// Inventory parser block
+// Inventory parser block. This can be copied to a new play
 var (
 	HostsPattern    string
 	InventoryPath   string
@@ -74,6 +74,21 @@ func LoadInventory() {
 	}
 }
 
+func init() {
+	if u.FileExistsV2(os.Args[2]) != nil {
+		// Run this command to embed
+		// go-bindata -pkg main -o plays/letsencrypt/bindata.go -nomemcopy inventory-letsencrypt/...
+		println("Extracting default inventory dir")
+		for _, as := range AssetNames() {
+			fmt.Printf("Restore %s\n", as)
+			RestoreAssets(".", as)
+		}
+		println("[INFO] Looks like it is first time you run. The inventory template has been generated. You have to examine the values and change it as required. Inventory directory is inventory-letsencrypt")
+		os.Exit(0)
+	}
+	LoadInventory()
+}
+
 // End inventory parser block
 
 // Below is the problem domain that might use the inventory data. In this eg this is letsencrypt
@@ -115,25 +130,13 @@ func (_u *MyUser) SavePrivateKey() {
 	// 5.
 	u.CheckErr(pem.Encode(file, pemBlock), "Write the PEM encoded data to the file")
 }
-func init() {
-	if u.FileExistsV2(os.Args[2]) != nil {
-		// Run this command to embed
-		// go-bindata -pkg main -o plays/letsencrypt/bindata.go -nomemcopy inventory-letsencrypt/...
-		println("Extracting default inventory dir")
-		for _, as := range AssetNames() {
-			fmt.Printf("Restore %s\n", as)
-			RestoreAssets(".", as)
-		}
-		println("[INFO] Looks like it is first time you run. The inventory template has been generated. You have to examine the values and change it as required. Inventory directory is inventory-letsencrypt")
-		os.Exit(0)
-	}
-	LoadInventory()
-}
 
 func playHost(host *aini.Host) {
+	// Any func playXXX will take a host to do and u need to populate vars in the next three lines
 	Vars := u.StringMapToAnyMap(host.Vars)
-	maps.Copy(Vars, CommandlineVars) // Get command line opts
+	maps.Copy(Vars, CommandlineVars) // Get command line opts override it if required
 	Vars = u.Must(ag.FlattenAllVars(Vars))
+	// End populate Vars. Vars can be used and pass around from now on
 
 	// Check current expired or not - check_cert_domain is like domain:port
 	if check_cert_domain := u.MapLookup(Vars, "check_cert_url", "").(string); check_cert_domain != "" {
@@ -158,7 +161,6 @@ func playHost(host *aini.Host) {
 	}
 
 	config := lego.NewConfig(&myUser)
-	// This CA URL is configured for a local dev instance of Boulder running in Docker in a VM.
 	if _t := u.MapLookup(Vars, "ca_dir_url", ""); _t != "" {
 		config.CADirURL = _t.(string)
 	} else {
@@ -173,7 +175,6 @@ func playHost(host *aini.Host) {
 	}
 
 	config.Certificate.KeyType = certcrypto.RSA2048
-	// A client facilitates communication with the CA server.
 	client := u.Must(lego.NewClient(config))
 
 	switch u.MapLookup(Vars, "challenge_provider", "http01").(string) {
@@ -227,7 +228,6 @@ func playHost(host *aini.Host) {
 	// ... all done.
 }
 
-func main() {
-	LoadInventory()
+func main() { // This only play the first host. If multiple hosts resovled from the host pattern we can spawn go routine per hosts
 	playHost(MatchedHostsMap[HostList[0]])
 }

@@ -31,3 +31,38 @@ https://github.com/sunshine69/golang-tools - Provide many convinient devops oper
 https://github.com/sunshine69/automation-go - Deeper into the DevOps domain, with jinja2 support (use the github.com/nikolalohinski/gonja but focus on devops usage)
 
 Still work in progress but you know the ideas ^^^
+
+## GO-LETSENCRYPT
+
+As a complete automation example and working - see the `plays/letsencrypt` dir.
+
+### Quick test
+
+*Build*
+
+```
+env CGO_ENABLED=0 go build -trimpath -ldflags="-X main.version=v0.1 -extldflags=-static -w -s" -o ~/.local/bin/go-let
+sencrypt plays/letsencrypt/*.go
+
+```
+
+*Run*
+
+Put the binary into your path if local/bin is not in your path.
+
+Create a directory to store output.
+
+```
+mkdir goletsencrypt
+go-letsencrypt '*uat' inventory-letsencrypt
+```
+
+The first time runs it will expand the inventory dirs and structure and exit.
+
+Now look into the dir `inventory-letsencrypt/group_vars/all.yaml` and others and start reading, editing it to your need. Then
+
+For testing run `go-letsencrypt '*uat' inventory-letsencrypt`
+
+For real run `go-letsencrypt '*prod' inventory-letsencrypt`
+
+Add it into your crontab to run weekly.

@@ -11,10 +11,15 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/challenge/dns01"
+	"github.com/go-acme/lego/v4/challenge/http01"
+	"github.com/go-acme/lego/v4/challenge/tlsalpn01"
 
 	// "github.com/go-acme/lego/v4/challenge/http01"
 	// "github.com/go-acme/lego/v4/challenge/tlsalpn01"
@@ -32,29 +37,39 @@ var (
 	MatchedHostsMap map[string]*aini.Host
 	HostList        []string
 	Inventory       *aini.InventoryData
-	Vars            map[string]any = make(map[string]any)
+	CommandlineVars map[string]any = make(map[string]any)
 )
 
-func LoadInventory(inventoryPath string) {
+// Load inventory and return command line vars in Vars. Also populate global vars.
+// Per host will get its own vars later
+func LoadInventory() {
 	println("Args Length: ", len(os.Args))
+	if _, ok := CommandlineVars["inventory_dir"]; ok {
+		return // Not reload it again
+	}
 	HostsPattern = os.Args[1]
 	if len(os.Args) > 2 {
 		InventoryPath = os.Args[2]
 	} else {
 		InventoryPath = "inventory/hosts.ini"
 	}
-	Inventory = u.Must(aini.ParseFile(inventoryPath))
-	inventoryDir := filepath.Dir(inventoryPath)
+	println("[INFO] InventoryPath: " + InventoryPath)
+	Inventory = u.Must(aini.ParseFile(InventoryPath))
+	inventoryDir := filepath.Dir(InventoryPath)
 	u.CheckErr(Inventory.AddVars(inventoryDir), "AddVars")
 	MatchedHostsMap = u.Must(Inventory.MatchHosts(HostsPattern))
 	HostList = u.MapKeysToSlice(MatchedHostsMap)
+	// Populate some default inventory vars. The specific host before use will update this Vars with ansible vars and flattern them
+	CommandlineVars["inventory_dir"] = filepath.Dir(InventoryPath)
+	CommandlineVars["playbook_dir"] = u.Must(os.Getwd())
 
 	if len(os.Args) > 3 {
 		// Loads command line vars
 		for _, item := range os.Args[3:] {
 			_tmp := strings.Split(item, "=")
 			key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
-			Vars[key] = val
+			println("Adding var from command line - " + key + "=" + val)
+			CommandlineVars[key] = val
 		}
 	}
 }
@@ -100,18 +115,41 @@ func (_u *MyUser) SavePrivateKey() {
 	// 5.
 	u.CheckErr(pem.Encode(file, pemBlock), "Write the PEM encoded data to the file")
 }
+func init() {
+	if u.FileExistsV2(os.Args[2]) != nil {
+		// Run this command to embed
+		// go-bindata -pkg main -o plays/letsencrypt/bindata.go -nomemcopy inventory-letsencrypt/...
+		println("Extracting default inventory dir")
+		for _, as := range AssetNames() {
+			fmt.Printf("Restore %s\n", as)
+			RestoreAssets(".", as)
+		}
+		println("[INFO] Looks like it is first time you run. The inventory template has been generated. You have to examine the values and change it as required. Inventory directory is inventory-letsencrypt")
+		os.Exit(0)
+	}
+	LoadInventory()
+}
 
 func playHost(host *aini.Host) {
-	maps.Copy(Vars, u.StringMapToAnyMap(host.Vars)) // Get command line opts
+	Vars := u.StringMapToAnyMap(host.Vars)
+	maps.Copy(Vars, CommandlineVars) // Get command line opts
 	Vars = u.Must(ag.FlattenAllVars(Vars))
 
+	// Check current expired or not - check_cert_domain is like domain:port
+	if check_cert_domain := u.MapLookup(Vars, "check_cert_url", "").(string); check_cert_domain != "" {
+		days := u.Must(strconv.Atoi(u.MapLookup(Vars, "days_to_expire", "10").(string)))
+		if needUpdate, err := u.CheckCertExpiry(check_cert_domain, days); !needUpdate && err == nil {
+			println("days to expire still greater then settings. Default is 10, add inventory var days_to_expire to set it")
+			os.Exit(0)
+		}
+	}
 	myUser := MyUser{
 		Email:   Vars["account_email"].(string),
 		KeyPath: Vars["user_key_path"].(string),
 	}
 
 	if u.MapLookup(Vars, "action", "").(string) == "create_user" {
-		// Create a user. New accounts need an email and private key to start.
+		println("Create a user. New accounts need an email and private key to start.")
 		privateKey := u.Must(ecdsa.GenerateKey(elliptic.P256(), rand.Reader))
 		myUser.Key = privateKey
 		myUser.SavePrivateKey()
@@ -121,25 +159,31 @@ func playHost(host *aini.Host) {
 
 	config := lego.NewConfig(&myUser)
 	// This CA URL is configured for a local dev instance of Boulder running in Docker in a VM.
-	switch u.MapLookup(Vars, "env", "") {
-	case "dev":
-		config.CADirURL = Vars["ca_dir_url"].(string) //"http://192.168.99.100:4000/directory"
-	case "uat":
-		config.CADirURL = lego.LEDirectoryStaging
-	case "prod":
-		config.CADirURL = lego.LEDirectoryProduction
+	if _t := u.MapLookup(Vars, "ca_dir_url", ""); _t != "" {
+		config.CADirURL = _t.(string)
+	} else {
+		switch u.MapLookup(Vars, "env", "") {
+		case "dev":
+			config.CADirURL = Vars["ca_dir_url"].(string) //"http://192.168.99.100:4000/directory"
+		case "uat":
+			config.CADirURL = lego.LEDirectoryStaging
+		case "prod":
+			config.CADirURL = lego.LEDirectoryProduction
+		}
 	}
+
 	config.Certificate.KeyType = certcrypto.RSA2048
 	// A client facilitates communication with the CA server.
 	client := u.Must(lego.NewClient(config))
 
-	// We specify an HTTP port of 5002 and an TLS port of 5001 on all interfaces
-	// because we aren't running as root and can't bind a listener to port 80 and 443
-	// (used later when we attempt to pass challenges). Keep in mind that you still
-	// need to proxy challenge traffic to port 5002 and 5001.
-	// u.CheckErr(client.Challenge.SetHTTP01Provider(http01.NewProviderServer("", "5002")),"SetHTTP01Provider")
-	// u.CheckErr(client.Challenge.SetTLSALPN01Provider(tlsalpn01.NewProviderServer("", "5001")),"SetTLSALPN01Provider")
-	u.CheckErr(client.Challenge.SetDNS01Provider(&MaraDNSProvider{Vars["maradns_config_file"].(string)}), "SetDNS01Provider")
+	switch u.MapLookup(Vars, "challenge_provider", "http01").(string) {
+	case "http01":
+		u.CheckErr(client.Challenge.SetHTTP01Provider(http01.NewProviderServer("", u.MapLookup(Vars, "http_port", "5002").(string))), "SetHTTP01Provider")
+	case "tls01":
+		u.CheckErr(client.Challenge.SetTLSALPN01Provider(tlsalpn01.NewProviderServer("", u.MapLookup(Vars, "https_port", "5001").(string))), "SetTLSALPN01Provider")
+	case "dns01":
+		u.CheckErr(client.Challenge.SetDNS01Provider(NewMaraDNSProvider(&MaraDNSProvider{Vars: Vars}), dns01.AddDNSTimeout(300*time.Second)), "SetDNS01Provider")
+	}
 
 	// New users will need to register
 	reg := u.Must(client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true}))
@@ -175,21 +219,15 @@ func playHost(host *aini.Host) {
 	u.CheckErr(os.WriteFile(u.MapLookup(Vars, "public_key_path", "server.crt").(string), certificates.Certificate, 0o600), "Save Cert")
 	// Each certificate comes back with the cert bytes, the bytes of the client's
 	// private key, and a certificate URL. SAVE THESE TO DISK.
-	fmt.Printf("%#v\n", certificates)
-
+	// fmt.Printf("%#v\n", certificates)
+	if postCmd := u.MapLookup(Vars, "post_command", "").(string); postCmd != "" {
+		o := u.Must(u.RunSystemCommandV2(postCmd, true))
+		println(o)
+	}
 	// ... all done.
 }
 
 func main() {
-	if u.FileExistsV2(os.Args[2]) != nil {
-		// Run this command to embed
-		// go-bindata -pkg main -o plays/letsencrypt/bindata.go -nomemcopy inventory-letsencrypt/...
-		println("Extracting default inventory dir")
-		for _, as := range AssetNames() {
-			fmt.Printf("Restore %s\n", as)
-			RestoreAssets(".", as)
-		}
-	}
-	LoadInventory(os.Args[2] + "/hosts.ini")
+	LoadInventory()
 	playHost(MatchedHostsMap[HostList[0]])
 }

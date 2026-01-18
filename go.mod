@@ -6,7 +6,7 @@ require (
 	github.com/go-acme/lego/v4 v4.31.0
 	github.com/relex/aini v1.6.0
 	github.com/sunshine69/automation-go v0.0.0-20260113120134-1f2cb573262e
-	github.com/sunshine69/golang-tools/utils v0.0.0-20260117005924-77c16e089627
+	github.com/sunshine69/golang-tools/utils v0.0.0-20260118053246-5b0380ec55a9
 	gopkg.in/yaml.v3 v3.0.1
 )
 

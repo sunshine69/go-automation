@@ -1,3 +1,45 @@
-complex_var:
-  f1: "complex-var- complex_var_env | upper "
-  f2: "Nothing f2"
+# provided at command line action=XXX where XXX can be create_user. First time run, add arg 'action=create_user'
+# to create one
+action: ''
+
+# TODO Change this
+account_email: 'you@yourdomain'
+# if it does not exist it will be genrated first time
+user_key_path: '{{ inventory_dir }}/files/user.key'
+
+# If set to empty we will auto pick up from lego lib. The example below is for dev running docker container Boulder
+ca_dir_url: "http://192.168.99.100:4000/directory"
+
+# TODO change it to suit if you use dns01 - see below
+maradns_config_file: '/etc/maradns/maradns.org'
+maradns_reload_cmd: 'systemctl reload maradns'
+
+# coma sep list of domain, first one is the principle one which has common name. Remember if you use wildcard cert (instead of)
+# something below, then you have to use dns01 resolver as letsencrypt only accepted choice
+# TODO Change it to suite
+domain: 'example.com,something.example.com'
+# the url in format example.com:443 to check the expiry date. If set it will check before attempting to request cert.
+check_cert_url: ''
+days_to_expire: ''
+
+# If files not exists it will be generated first time
+private_key_path: '{{ inventory_dir }}/files/server-{{ env }}.key'
+public_key_path: '{{ inventory_dir }}/files/server-{{ env }}.crt'
+
+# type of challenge. Values: dns01,http01. When using http01 note that
+# We specify an HTTP port of 5002 and an TLS port of 5001 on all interfaces
+# because we aren't running as root and can't bind a listener to port 80 and 443
+# (used later when we attempt to pass challenges). Keep in mind that you still
+# need to proxy challenge traffic from 80 -> 5002 and from 443 -> 5001 from your router because letsencrypt
+# does not allow any other port then 80 and 443
+# dns01 as of now it is hardcoded to maradns provider provided.
+# TODO Change this
+challenge_provider: 'dns01'
+# Customized port for http01 or tls01
+http_port: "5002"
+https_port: "5001"
+
+# run command after all done
+post_command: |
+  echo "done. do anything here like copy cert into server, reload etc"
+  # cp {{ private_key_path }} /etc/nginx/ssl/server.key

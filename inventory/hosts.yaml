@@ -1,0 +1,30 @@
+plugin: generator
+hosts:
+  name: "{{ ops }}_{{ pkg }}_{{ env }}"
+  vars:
+    myvar: "my value"
+  parents:
+    - name: "{{ pkg }}_{{ env }}"
+      parents:
+        - name: "{{ pkg }}"
+          vars:
+            pkg: "{{ pkg }}"
+        - name: "{{ env }}"
+          vars:
+            env: "{{ env }}"
+
+    - name: "{{ ops }}"
+      vars:
+        ops: "{{ ops }}"
+
+
+layers:
+  ops:
+    - update
+  pkg:
+    - letsencrypt
+  env:
+    - dev
+    - uat
+    - prod
+

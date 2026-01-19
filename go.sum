@@ -84,6 +84,10 @@ github.com/sunshine69/automation-go v0.0.0-20260118232229-5dab63b117e3 h1:s9tZN4
 github.com/sunshine69/automation-go v0.0.0-20260118232229-5dab63b117e3/go.mod h1:qmh8VfYSDw8lWFoagrtg3BMTtPCkosIW2Y1yFdcLR3s=
 github.com/sunshine69/automation-go v0.0.0-20260118232626-b3825b70bccd h1:G1awJf/o1EBqoHvX6rRI0x8RaU8UZVY/2/23wWAABVw=
 github.com/sunshine69/automation-go v0.0.0-20260118232626-b3825b70bccd/go.mod h1:Mffpor4Jzk6GoE1al1/faCvHPuYoKKQE3ld1aSrHzis=
+github.com/sunshine69/automation-go v0.0.0-20260119040251-7080b2e00fe0 h1:ikbCmf0DSAFqBuU8/gLC/4YHYHomHXTQvA3O6NlQ9M0=
+github.com/sunshine69/automation-go v0.0.0-20260119040251-7080b2e00fe0/go.mod h1:Mffpor4Jzk6GoE1al1/faCvHPuYoKKQE3ld1aSrHzis=
+github.com/sunshine69/automation-go v0.0.0-20260119091701-b6e53440b52e h1:+X+YGCuVSgFuRB/bXt7ozeHP8QhG0adUrKnmaN5Lpuk=
+github.com/sunshine69/automation-go v0.0.0-20260119091701-b6e53440b52e/go.mod h1:Mffpor4Jzk6GoE1al1/faCvHPuYoKKQE3ld1aSrHzis=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260114100515-fdde0bb6832f h1:T454HRXK6vOiue/1UVt5y0kxXWZpfQBLMkvZZiC0LVE=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260114100515-fdde0bb6832f/go.mod h1:duFf0fAvN25xq6eClt+FUN3bPdz49ZVddFP0MYwsY7I=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260116090622-d3ec8b7b0e0a h1:nUArqYIK8UREVA0csiNfhYcmokY6bPU8FHA13Y1NgDc=

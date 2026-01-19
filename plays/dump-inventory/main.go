@@ -11,52 +11,61 @@ import (
 	u "github.com/sunshine69/golang-tools/utils"
 )
 
-// Inventory parser block
+// Inventory parser block. This can be copied to a new play
 var (
 	HostsPattern    string
 	InventoryPath   string
 	MatchedHostsMap map[string]*aini.Host
 	HostList        []string
 	Inventory       *aini.InventoryData
-	Vars            map[string]any = make(map[string]any)
+	CommandlineVars map[string]any = make(map[string]any)
 )
 
-func init() {
+// Load inventory and return command line vars in Vars. Also populate global vars.
+// Per host will get its own vars later
+func LoadInventory() {
 	println("Args Length: ", len(os.Args))
+	if _, ok := CommandlineVars["inventory_dir"]; ok {
+		return // Not reload it again
+	}
 	HostsPattern = os.Args[1]
 	if len(os.Args) > 2 {
 		InventoryPath = os.Args[2]
 	} else {
 		InventoryPath = "inventory/hosts.ini"
 	}
-	LoadInventory(InventoryPath)
-}
-
-func LoadInventory(inventoryPath string) {
-	Inventory = u.Must(aini.ParseFile(inventoryPath))
-	inventoryDir := filepath.Dir(inventoryPath)
+	println("[INFO] InventoryPath: " + InventoryPath)
+	Inventory = u.Must(aini.ParseFile(InventoryPath))
+	inventoryDir := filepath.Dir(InventoryPath)
 	u.CheckErr(Inventory.AddVars(inventoryDir), "AddVars")
 	MatchedHostsMap = u.Must(Inventory.MatchHosts(HostsPattern))
 	HostList = u.MapKeysToSlice(MatchedHostsMap)
+	// Populate some default inventory vars. The specific host before use will update this Vars with ansible vars and flattern them
+	CommandlineVars["inventory_dir"] = filepath.Dir(InventoryPath)
+	CommandlineVars["playbook_dir"] = u.Must(os.Getwd())
 
 	if len(os.Args) > 3 {
 		// Loads command line vars
 		for _, item := range os.Args[3:] {
 			_tmp := strings.Split(item, "=")
 			key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
-			Vars[key] = val
+			println("Adding var from command line - " + key + "=" + val)
+			CommandlineVars[key] = val
 		}
 	}
 }
 
-// end
+func init() {
+	LoadInventory()
+}
 
+// End inventory parser block
 func playHost(host *aini.Host) {
 	// Inventory.HostsToLower()
 	// Inventory.GroupsToLower()
 	println("Start play host: " + host.Name)
 	vars := u.Must(ag.FlattenAllVars(u.StringMapToAnyMap(host.Vars)))
-	maps.Copy(vars, Vars)
+	maps.Copy(vars, CommandlineVars)
 	// From now on you can use inventory vars in your exec command, template command etc whatever you need
 	println("*** DUMP ALL VARS ***", u.JsonDump(vars, ""))
 }

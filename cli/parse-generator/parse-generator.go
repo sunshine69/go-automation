@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/relex/aini"
-	u "github.com/sunshine69/golang-tools/utils"
-	"gopkg.in/yaml.v3"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/relex/aini"
+	ag "github.com/sunshine69/automation-go/lib"
+	u "github.com/sunshine69/golang-tools/utils"
+	"gopkg.in/yaml.v3"
 )
 
 // GeneratorInventory represents the structure of the generator plugin inventory
@@ -46,6 +49,14 @@ func ParseGeneratorInventory(filename string) (*aini.InventoryData, error) {
 	inventoryData, err := aini.Parse(reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse with aini: %w", err)
+	}
+
+	// Load group_vars and host_vars from the inventory directory using aini's built-in function
+	inventoryDir := filepath.Dir(filename)
+	inventoryData.Reconcile()
+
+	if err := inventoryData.AddVars(inventoryDir); err != nil {
+		return nil, fmt.Errorf("failed to load vars from %s: %w", inventoryDir, err)
 	}
 
 	return inventoryData, nil
@@ -191,6 +202,7 @@ type GroupData struct {
 // HostsConfig holds the parsed hosts configuration
 type HostsConfig struct {
 	HostTemplate    string
+	Vars            map[string]string
 	ParentStructure []ParentNode
 }
 
@@ -325,6 +337,7 @@ func generateCombinations(layerNames []string, layerValues map[string][]string) 
 
 // createGroupsFromStructure creates groups based on the parent structure
 func createGroupsFromStructure(groups map[string]*GroupData, parents []ParentNode, vars map[string]string, hostName string) {
+	// Process each parent and create its structure
 	for _, parent := range parents {
 		groupName := expandTemplate(parent.NameTemplate, vars)
 
@@ -365,21 +378,18 @@ func createGroupsFromStructure(groups map[string]*GroupData, parents []ParentNod
 				}
 			}
 		}
-	}
 
-	// Only add the host to the TOP-LEVEL parent group (the most specific one)
-	// This is the first parent in the list
-	if len(parents) > 0 {
-		topGroupName := expandTemplate(parents[0].NameTemplate, vars)
+		// Add the host to THIS parent group (not just the first one)
+		// Each top-level parent should contain the host
 		hostExists := false
-		for _, h := range groups[topGroupName].Hosts {
+		for _, h := range groups[groupName].Hosts {
 			if h == hostName {
 				hostExists = true
 				break
 			}
 		}
 		if !hostExists {
-			groups[topGroupName].Hosts = append(groups[topGroupName].Hosts, hostName)
+			groups[groupName].Hosts = append(groups[groupName].Hosts, hostName)
 		}
 	}
 }
@@ -426,7 +436,66 @@ func createGroupStructureOnly(groups map[string]*GroupData, parent ParentNode, v
 	}
 }
 
-// expandTemplate replaces template variables with actual values
+// GetHostVars retrieves all variables for a specific host, including:
+// - Direct host vars
+// - Host vars from host_vars directory
+// - Group vars from all groups the host belongs to
+// - Group vars from group_vars directory
+// Variables are resolved in order of precedence (host vars override group vars)
+func GetHostVars(inventory *aini.InventoryData, hostName string) (map[string]string, error) {
+	// Find the host
+	var targetHost *aini.Host
+	for _, host := range inventory.Hosts {
+		if host.Name == hostName {
+			targetHost = host
+			break
+		}
+	}
+
+	if targetHost == nil {
+		return nil, fmt.Errorf("host %s not found", hostName)
+	}
+
+	// Collect all variables with proper precedence
+	// Order: group vars (least specific to most specific) -> host vars
+	allVars := make(map[string]string)
+
+	// Get all groups this host belongs to
+	hostGroups := findHostGroups(inventory, hostName)
+
+	// Apply group vars (from least specific to most specific)
+	// First apply vars from parent groups, then child groups
+	for _, groupName := range hostGroups {
+		if group, ok := inventory.Groups[groupName]; ok {
+			for k, v := range group.Vars {
+				allVars[k] = v
+			}
+		}
+	}
+
+	// Apply host vars (highest priority)
+	for k, v := range targetHost.Vars {
+		allVars[k] = v
+	}
+
+	return allVars, nil
+}
+
+// findHostGroups returns all groups that a host belongs to
+func findHostGroups(inventory *aini.InventoryData, hostName string) []string {
+	var groups []string
+
+	for groupName, group := range inventory.Groups {
+		for _, host := range group.Hosts {
+			if host.Name == hostName {
+				groups = append(groups, groupName)
+				break
+			}
+		}
+	}
+
+	return groups
+}
 func expandTemplate(template string, vars map[string]string) string {
 	result := template
 
@@ -452,15 +521,15 @@ func main() {
 	inputFile := os.Args[1]
 	inventory, err := ParseGeneratorInventory(inputFile)
 	if err != nil {
-		fmt.Printf("Error parsing inventory: %v\n", err)
-		os.Exit(1)
+		fmt.Printf("Error parsing inventory using generator. Will try to pass normal: %v\n", err)
+		inventory = u.Must(aini.ParseFile(inputFile))
 	}
 
 	// Example: List all hosts
-	fmt.Println("Hosts:")
-	for _, host := range inventory.Hosts {
-		fmt.Printf("  - %s\n", host.Name)
-	}
+	// fmt.Println("Hosts:")
+	// for _, host := range inventory.Hosts {
+	// 	fmt.Printf("  - %s\n", host.Name)
+	// }
 
 	// Example: List all groups
 	fmt.Println("\nGroups:")
@@ -480,10 +549,16 @@ func main() {
 	}
 
 	// Example: Get hosts in a specific group
-	fmt.Println("\nExample - Hosts in 'deploy_slingshot_dev_tanzu_BNE' group:")
-	if group, ok := inventory.Groups["deploy_slingshot_dev_tanzu_BNE"]; ok {
+	fmt.Println("\nExample - Hosts in group:")
+	myinvent := map[string]map[string]string{}
+	for gn, group := range inventory.Groups {
+		println("Group name: " + gn)
 		for _, host := range group.Hosts {
 			fmt.Printf("  - %s\n", host.Name)
+			if myinvent[host.Name] == nil {
+				myinvent[host.Name] = make(map[string]string)
+			}
+			myinvent[host.Name] = u.Must(GetHostVars(inventory, host.Name))
 		}
 	}
 
@@ -491,13 +566,19 @@ func main() {
 	// inventory.GroupsToLower()
 
 	inventoryDir := filepath.Dir(inputFile)
-	println("InventoryDir: " + inventoryDir)
+	println("\nStarted with InventoryDir: " + inventoryDir)
 	if err := inventory.AddVars(inventoryDir); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to load inventory variables %s: %v\n", inventoryDir, err)
 		os.Exit(4)
 	}
 	hostsPattern := os.Args[2]
 	matchedHostsMap := u.Must(inventory.MatchHosts(hostsPattern))
-	execHost := matchedHostsMap[hostsPattern]
-	println("Inventory Matched with Host: "+hostsPattern+" \n", u.JsonDump(execHost, ""))
+	HostList := u.MapKeysToSlice(matchedHostsMap)
+	println("[INFO] Hosts matched the pattern: " + u.JsonDump(HostList, ""))
+	execHost := matchedHostsMap[HostList[0]]
+	Vars := execHost.Vars
+	// maps.Copy(Vars, execHost.InventoryVars)
+	maps.Copy(Vars, myinvent[HostList[0]]) // TODO vars declared in the hosts config does not get in
+	vars := u.Must(ag.FlattenAllVars(u.StringMapToAnyMap(Vars)))
+	println("Inventory Matched with Host: "+hostsPattern+" \n", u.JsonDump(vars, ""))
 }

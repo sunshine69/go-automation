@@ -1,0 +1,1 @@
+Generated, resources files are in here

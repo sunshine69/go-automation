@@ -36,7 +36,6 @@ layers:
   operation:
     - deploy
     - build
-    - get_k8s_logs
   product:
   # one repo map to one product name (projectName). This may have multiple applications (map to multiple helm packages)
   # one repo will have one ingress DNS. Each application uses the same ingress but may have different route prefix
@@ -44,9 +43,7 @@ layers:
 
   env:
     - dev
-    - qc
     - uat
-    - et
     - prod
 
 

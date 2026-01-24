@@ -40,29 +40,6 @@ var (
 	CommandlineVars map[string]any = make(map[string]any)
 )
 
-// Load inventory and return command line vars in Vars. Also populate global vars.
-// Per host will get its own vars later
-func LoadInventory(InventoryDir, HostsPattern string, extraVar u.ArrayFlags) {
-	if _, ok := CommandlineVars["inventory_dir"]; ok {
-		return // Not reload it again
-	}
-	println("[INFO] InventoryPath: " + InventoryDir)
-	Inventory = ag.ParseInventoryDir(InventoryDir)
-	MatchedHostsMap = u.Must(Inventory.MatchHosts(HostsPattern))
-	HostList = u.MapKeysToSlice(MatchedHostsMap)
-	// Populate some default inventory vars. The specific host before use will update this Vars with ansible vars and flattern them
-	CommandlineVars["inventory_dir"] = InventoryDir
-	CommandlineVars["playbook_dir"] = u.Must(os.Getwd())
-
-	// Loads command line vars
-	for _, item := range extraVar {
-		_tmp := strings.Split(item, "=")
-		key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
-		println("Adding var from command line - " + key + "=" + val)
-		CommandlineVars[key] = val
-	}
-}
-
 func init() {
 	_HostsPattern := flag.String("H", "", "Host pattern (glob based)")
 	// For this app as we use go-bindata to embed that dir thus it is hardcoded as the initial extraction will create that dir
@@ -89,7 +66,8 @@ func init() {
 		os.Exit(0)
 	}
 
-	LoadInventory(InventoryDir, HostsPattern, extraVars)
+	Inventory, MatchedHostsMap, HostList, CommandlineVars = ag.LoadInventory(InventoryDir, HostsPattern, extraVars)
+
 	if *debug > 0 {
 		fmt.Fprintf(os.Stderr, "InventoryDir: %s - HostsPattern: %s - extraVars: %s\n", u.JsonDump(InventoryDir, ""), u.JsonDump(HostsPattern, ""), u.JsonDump(extraVars, ""))
 		if *debug > 1 {
@@ -237,6 +215,6 @@ func playHost(host *aini.Host) {
 	// ... all done.
 }
 
-func main() { // This only play the first host. If multiple hosts resovled from the host pattern we can spawn go routine per hosts
+func main() { // This only play the first host. If multiple hosts resolved from the host pattern we can spawn go routine per hosts
 	playHost(MatchedHostsMap[HostList[0]])
 }

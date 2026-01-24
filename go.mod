@@ -5,8 +5,8 @@ go 1.25.5
 require (
 	github.com/go-acme/lego/v4 v4.31.0
 	github.com/relex/aini v1.6.0
-	github.com/sunshine69/automation-go v0.0.0-20260124033734-0241042367a6
-	github.com/sunshine69/golang-tools/utils v0.0.0-20260123054802-8bcf6c2ade73
+	github.com/sunshine69/automation-go v0.0.0-20260203090231-57bf26e6f99a
+	github.com/sunshine69/golang-tools/utils v0.0.0-20260130033246-e199b7029b2f
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -22,10 +22,10 @@ require (
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nikolalohinski/gonja/v2 v2.5.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
+	github.com/sunshine69/sonja/v2 v2.3.4 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

@@ -14,6 +14,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// This version is over engineering - not merged to the ag lib - just for fun here. It does not get the Vars properly
+// and hard to debug/fix
 // GeneratorInventory represents the structure of the generator plugin inventory
 type GeneratorInventory struct {
 	Plugin string                 `yaml:"plugin"`

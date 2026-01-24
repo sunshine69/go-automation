@@ -1,0 +1,26 @@
+plugin: generator
+hosts:
+  name: "{{ action }}_{{ app }}_{{ env }}"
+  parents:
+    - name: "{{ app }}_{{ env }}"
+      parents:
+        - name: "{{ app }}"
+          vars:
+            app: "{{ app }}"
+        - name: "{{ env }}"
+          vars:
+            env: "{{ env }}"
+    - name: "{{ action }}"
+      vars:
+        action: "{{ action }}"
+
+layers:
+  action:
+    - update
+    - create-user
+  app:
+    - letsencrypt
+  env:
+    - dev
+    - uat
+    - prod

@@ -1,8 +1,5 @@
-# provided at command line action=XXX where XXX can be create_user. First time run, add arg 'action=create_user'
-# to create one
-action: ''
-
-# TODO Change this
+# TODO Change this. To create user select the host like -h 'create-user_letsencrypt_prod' if you have done it yet.
+# it will create-user for you along with update the certs
 account_email: 'you@yourdomain'
 # if it does not exist it will be genrated first time
 user_key_path: '{{ inventory_dir }}/files/user.key'

@@ -7,10 +7,10 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"maps"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -33,7 +33,7 @@ import (
 // Inventory parser block. This can be copied to a new play
 var (
 	HostsPattern    string
-	InventoryPath   string
+	InventoryDir    string
 	MatchedHostsMap map[string]*aini.Host
 	HostList        []string
 	Inventory       *aini.InventoryData
@@ -42,40 +42,42 @@ var (
 
 // Load inventory and return command line vars in Vars. Also populate global vars.
 // Per host will get its own vars later
-func LoadInventory() {
-	println("Args Length: ", len(os.Args))
+func LoadInventory(InventoryDir, HostsPattern string, extraVar u.ArrayFlags) {
 	if _, ok := CommandlineVars["inventory_dir"]; ok {
 		return // Not reload it again
 	}
-	HostsPattern = os.Args[1]
-	if len(os.Args) > 2 {
-		InventoryPath = os.Args[2]
-	} else {
-		InventoryPath = "inventory/hosts.ini"
-	}
-	println("[INFO] InventoryPath: " + InventoryPath)
-	Inventory = u.Must(aini.ParseFile(InventoryPath))
-	inventoryDir := filepath.Dir(InventoryPath)
-	u.CheckErr(Inventory.AddVars(inventoryDir), "AddVars")
+	println("[INFO] InventoryPath: " + InventoryDir)
+	Inventory = ag.ParseInventoryDir(InventoryDir)
 	MatchedHostsMap = u.Must(Inventory.MatchHosts(HostsPattern))
 	HostList = u.MapKeysToSlice(MatchedHostsMap)
 	// Populate some default inventory vars. The specific host before use will update this Vars with ansible vars and flattern them
-	CommandlineVars["inventory_dir"] = filepath.Dir(InventoryPath)
+	CommandlineVars["inventory_dir"] = InventoryDir
 	CommandlineVars["playbook_dir"] = u.Must(os.Getwd())
 
-	if len(os.Args) > 3 {
-		// Loads command line vars
-		for _, item := range os.Args[3:] {
-			_tmp := strings.Split(item, "=")
-			key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
-			println("Adding var from command line - " + key + "=" + val)
-			CommandlineVars[key] = val
-		}
+	// Loads command line vars
+	for _, item := range extraVar {
+		_tmp := strings.Split(item, "=")
+		key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
+		println("Adding var from command line - " + key + "=" + val)
+		CommandlineVars[key] = val
 	}
 }
 
 func init() {
-	if u.FileExistsV2(os.Args[2]) != nil {
+	_HostsPattern := flag.String("H", "", "Host pattern (glob based)")
+	// For this app as we use go-bindata to embed that dir thus it is hardcoded as the initial extraction will create that dir
+	// however u can rename it and change it using -i option
+	_InventoryDir := flag.String("i", "inventory-letsencrypt", "Inventory dir which contains hosts files (ini and yaml generator plugin supported) and inventory data (group_vars, host_vars etc)")
+
+	var extraVars u.ArrayFlags
+	flag.Var(&extraVars, "e", "Extra vars to pass to inventory data, like -e action=create_user -e var1=value1")
+	debug := flag.Int("v", 0, "Verbose Debug level, default 0")
+
+	flag.Parse()
+
+	HostsPattern, InventoryDir = *_HostsPattern, *_InventoryDir
+
+	if u.FileExistsV2(InventoryDir) != nil {
 		// Run this command to embed
 		// go-bindata -pkg main -o plays/letsencrypt/bindata.go -nomemcopy inventory-letsencrypt/...
 		println("Extracting default inventory dir")
@@ -86,7 +88,14 @@ func init() {
 		println("[INFO] Looks like it is first time you run. The inventory template has been generated. You have to examine the values and change it as required. Inventory directory is inventory-letsencrypt")
 		os.Exit(0)
 	}
-	LoadInventory()
+
+	LoadInventory(InventoryDir, HostsPattern, extraVars)
+	if *debug > 0 {
+		fmt.Fprintf(os.Stderr, "InventoryDir: %s - HostsPattern: %s - extraVars: %s\n", u.JsonDump(InventoryDir, ""), u.JsonDump(HostsPattern, ""), u.JsonDump(extraVars, ""))
+		if *debug > 1 {
+			fmt.Fprintf(os.Stderr, "Loaded InventoryData: %s\n", u.JsonDump(Inventory, ""))
+		}
+	}
 }
 
 // End inventory parser block
@@ -151,7 +160,7 @@ func playHost(host *aini.Host) {
 		KeyPath: Vars["user_key_path"].(string),
 	}
 
-	if u.MapLookup(Vars, "action", "").(string) == "create_user" {
+	if u.MapLookup(Vars, "action", "").(string) == "create-user" {
 		println("Create a user. New accounts need an email and private key to start.")
 		privateKey := u.Must(ecdsa.GenerateKey(elliptic.P256(), rand.Reader))
 		myUser.Key = privateKey

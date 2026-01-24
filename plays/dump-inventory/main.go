@@ -35,7 +35,12 @@ func LoadInventory() {
 		InventoryPath = "inventory/hosts.ini"
 	}
 	println("[INFO] InventoryPath: " + InventoryPath)
-	Inventory = u.Must(aini.ParseFile(InventoryPath))
+	var Inventory *aini.InventoryData
+	var err error
+	Inventory, err = aini.ParseFile(InventoryPath)
+	if err != nil {
+		Inventory = ag.ParseInventoryGenerator(InventoryPath)
+	}
 	inventoryDir := filepath.Dir(InventoryPath)
 	u.CheckErr(Inventory.AddVars(inventoryDir), "AddVars")
 	MatchedHostsMap = u.Must(Inventory.MatchHosts(HostsPattern))

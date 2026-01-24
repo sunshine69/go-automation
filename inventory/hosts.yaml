@@ -20,7 +20,7 @@ hosts:
 
 layers:
   ops:
-    - update
+    - build
   pkg:
     - letsencrypt
   env:

@@ -96,6 +96,8 @@ github.com/sunshine69/automation-go v0.0.0-20260120122839-f9689f5cd3fa h1:Z5iORn
 github.com/sunshine69/automation-go v0.0.0-20260120122839-f9689f5cd3fa/go.mod h1:i3/FLrG0wvJxHF//HLzscuBSfC+4v3ZiK3HrMn2YSAw=
 github.com/sunshine69/automation-go v0.0.0-20260124033734-0241042367a6 h1:CL/S3xstJheHNcn1z0gik4eHvBeXZauug8ISri5G3Qo=
 github.com/sunshine69/automation-go v0.0.0-20260124033734-0241042367a6/go.mod h1:i3/FLrG0wvJxHF//HLzscuBSfC+4v3ZiK3HrMn2YSAw=
+github.com/sunshine69/automation-go v0.0.0-20260124111044-c4c2151f98ef h1:0MFQatohKWtY+E8tWzfaiYJ8OuQhOe9JNyL1Xt+lawk=
+github.com/sunshine69/automation-go v0.0.0-20260124111044-c4c2151f98ef/go.mod h1:Vc7c8FAH+HaeTW/GTU82FBrmc95bHtbVDNR/Q37Nt1w=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260114100515-fdde0bb6832f h1:T454HRXK6vOiue/1UVt5y0kxXWZpfQBLMkvZZiC0LVE=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260114100515-fdde0bb6832f/go.mod h1:duFf0fAvN25xq6eClt+FUN3bPdz49ZVddFP0MYwsY7I=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260116090622-d3ec8b7b0e0a h1:nUArqYIK8UREVA0csiNfhYcmokY6bPU8FHA13Y1NgDc=
@@ -112,6 +114,8 @@ github.com/sunshine69/golang-tools/utils v0.0.0-20260118232537-176d0d764a95 h1:q
 github.com/sunshine69/golang-tools/utils v0.0.0-20260118232537-176d0d764a95/go.mod h1:VKqcn0ZbRAwiugnkXKCMEvBZxFbAMbHoLDXdHPQHFPo=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260123054802-8bcf6c2ade73 h1:YSU2BeRUcOgMbcR86DxRKJtLXqzgTj5bTAyBTIhoyu0=
 github.com/sunshine69/golang-tools/utils v0.0.0-20260123054802-8bcf6c2ade73/go.mod h1:VKqcn0ZbRAwiugnkXKCMEvBZxFbAMbHoLDXdHPQHFPo=
+github.com/sunshine69/golang-tools/utils v0.0.0-20260124100451-9e131c6e7405 h1:/DSmZnHo+ijI2IEq6nfmd7YkpqfQ7zZCXUoQg4nK3Bc=
+github.com/sunshine69/golang-tools/utils v0.0.0-20260124100451-9e131c6e7405/go.mod h1:VKqcn0ZbRAwiugnkXKCMEvBZxFbAMbHoLDXdHPQHFPo=
 github.com/tidwall/gjson v1.18.0 h1:FIDeeyB800efLX89e5a8Y0BNH+LOngJyGrIWxG2FKQY=
 github.com/tidwall/gjson v1.18.0/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JTxsfmM=

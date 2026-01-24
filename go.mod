@@ -5,8 +5,8 @@ go 1.25.5
 require (
 	github.com/go-acme/lego/v4 v4.31.0
 	github.com/relex/aini v1.6.0
-	github.com/sunshine69/automation-go v0.0.0-20260124033734-0241042367a6
-	github.com/sunshine69/golang-tools/utils v0.0.0-20260123054802-8bcf6c2ade73
+	github.com/sunshine69/automation-go v0.0.0-20260124111044-c4c2151f98ef
+	github.com/sunshine69/golang-tools/utils v0.0.0-20260124100451-9e131c6e7405
 	gopkg.in/yaml.v3 v3.0.1
 )
 

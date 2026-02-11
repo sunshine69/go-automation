@@ -28,7 +28,7 @@ I have prepared many short cut, utilites in two other libraries ready to be used
 
 https://github.com/sunshine69/golang-tools - Provide many convinient devops operations functions and make to use go template easier.
 
-https://github.com/sunshine69/automation-go - Deeper into the DevOps domain, with jinja2 support (use the github.com/nikolalohinski/gonja but focus on devops usage)
+https://github.com/sunshine69/automation-go - Deeper into the DevOps domain, with jinja2 support (use the go port of minijinja but focus on devops usage)
 
 Still work in progress but you know the ideas ^^^
 
@@ -41,6 +41,9 @@ As a complete automation example and working - see the `plays/letsencrypt` dir.
 *Build*
 
 ```
+# Embeded the default inventory dir. First time run it will extract it to the current dir
+go-bindata -pkg main -o plays/letsencrypt/bindata.go -nomemcopy inventory-letsencrypt/...
+
 env CGO_ENABLED=0 go build -trimpath -ldflags="-X main.version=v0.1 -extldflags=-static -w -s" -o ~/.local/bin/go-let
 sencrypt plays/letsencrypt/*.go
 

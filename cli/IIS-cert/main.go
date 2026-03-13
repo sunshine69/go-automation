@@ -1,3 +1,5 @@
+//go:build windows
+
 package main
 
 // IIS Certificate Update CLI (Pure Go, No PowerShell)
@@ -97,7 +99,10 @@ func importPFXToMachineStore(pfxPath, password string) (string, error) {
 		Data: &pfxData[0],
 	}
 
-	pw, _ := syscall.UTF16PtrFromString(password)
+	pw, err := syscall.UTF16PtrFromString(password) // Changed from _ to err
+	if err != nil {
+		return "", err
+	}
 
 	store, _, err := procPFXImportCertStore.Call(
 		uintptr(unsafe.Pointer(&blob)),
@@ -110,7 +115,10 @@ func importPFXToMachineStore(pfxPath, password string) (string, error) {
 	}
 
 	// Open LocalMachine\MY store
-	storeName, _ := syscall.UTF16PtrFromString("MY")
+	storeName, err := syscall.UTF16PtrFromString("MY")
+	if err != nil {
+		return "", err
+	}
 
 	machineStore, _, err := procCertOpenStore.Call(
 		CERT_STORE_PROV_SYSTEM,
@@ -168,7 +176,10 @@ func updateIISSslBinding(host string, port int, thumb string) error {
 	}
 
 	hostPort := fmt.Sprintf("%s:%d", host, port)
-	hostPtr, _ := syscall.UTF16PtrFromString(hostPort)
+	hostPtr, err := syscall.UTF16PtrFromString(hostPort)
+	if err != nil {
+		return err
+	}
 
 	type HTTP_SERVICE_CONFIG_SSL_SNI_SET struct {
 		KeyDesc struct {

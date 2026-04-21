@@ -1,12 +1,10 @@
 package main
 
 import (
-	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/relex/aini"
 	ag "github.com/sunshine69/automation-go/lib"
 	u "github.com/sunshine69/golang-tools/utils"
 )
@@ -15,9 +13,8 @@ import (
 var (
 	HostsPattern    string
 	InventoryPath   string
-	MatchedHostsMap map[string]*aini.Host
 	HostList        []string
-	Inventory       *aini.InventoryData
+	Inventory       *ag.Inventory
 	CommandlineVars map[string]any = make(map[string]any)
 )
 
@@ -35,16 +32,10 @@ func LoadInventory() {
 		InventoryPath = "inventory/hosts.ini"
 	}
 	println("[INFO] InventoryPath: " + InventoryPath)
-	var Inventory *aini.InventoryData
-	var err error
-	Inventory, err = aini.ParseFile(InventoryPath)
-	if err != nil {
-		Inventory = ag.ParseInventoryGenerator(InventoryPath)
-	}
-	inventoryDir := filepath.Dir(InventoryPath)
-	u.CheckErr(Inventory.AddVars(inventoryDir), "AddVars")
-	MatchedHostsMap = u.Must(Inventory.MatchHosts(HostsPattern))
-	HostList = u.MapKeysToSlice(MatchedHostsMap)
+	Inventory = u.Must(ag.ParseInventoryDir(InventoryPath))
+	Inventory.ParseAllInventoryVars()
+	HostList = Inventory.MatchHost(HostsPattern)
+
 	// Populate some default inventory vars. The specific host before use will update this Vars with ansible vars and flattern them
 	CommandlineVars["inventory_dir"] = filepath.Dir(InventoryPath)
 	CommandlineVars["playbook_dir"] = u.Must(os.Getwd())
@@ -65,18 +56,16 @@ func init() {
 }
 
 // End inventory parser block
-func playHost(host *aini.Host) {
+func playHost(host string) {
 	// Inventory.HostsToLower()
 	// Inventory.GroupsToLower()
-	println("Start play host: " + host.Name)
-	vars := u.Must(ag.FlattenAllVars(u.StringMapToAnyMap(host.Vars)))
-	maps.Copy(vars, CommandlineVars)
+	println("Start play host: " + host)
 	// From now on you can use inventory vars in your exec command, template command etc whatever you need
-	println("*** DUMP ALL VARS ***", u.JsonDump(vars, ""))
+	println("*** DUMP ALL VARS ***", u.JsonDump(Inventory.Hosts[host].Vars, ""))
 }
 
 func main() {
 	for _, h := range HostList { // can spawn go routine to run in parallel or exec in sequence
-		playHost(MatchedHostsMap[h])
+		playHost(h)
 	}
 }

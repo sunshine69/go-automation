@@ -25,7 +25,6 @@ import (
 	// "github.com/go-acme/lego/v4/challenge/tlsalpn01"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/registration"
-	"github.com/relex/aini"
 	ag "github.com/sunshine69/automation-go/lib"
 	u "github.com/sunshine69/golang-tools/utils"
 )
@@ -34,14 +33,13 @@ import (
 var (
 	HostsPattern    string
 	InventoryDir    string
-	MatchedHostsMap map[string]*aini.Host
 	HostList        []string
-	Inventory       *aini.InventoryData
+	Inventory       *ag.Inventory
 	CommandlineVars map[string]any = make(map[string]any)
 )
 
 func init() {
-	_HostsPattern := flag.String("H", "", "Host pattern (glob based)")
+	_HostsPattern := flag.String("H", "", "Host pattern (golang regex based)")
 	// For this app as we use go-bindata to embed that dir thus it is hardcoded as the initial extraction will create that dir
 	// however u can rename it and change it using -i option
 	_InventoryDir := flag.String("i", "inventory-letsencrypt", "Inventory dir which contains hosts files (ini and yaml generator plugin supported) and inventory data (group_vars, host_vars etc)")
@@ -65,8 +63,9 @@ func init() {
 		println("[INFO] Looks like it is first time you run. The inventory template has been generated. You have to examine the values and change it as required. Inventory directory is inventory-letsencrypt")
 		os.Exit(0)
 	}
-
-	Inventory, MatchedHostsMap, HostList, CommandlineVars = ag.LoadInventory(InventoryDir, HostsPattern, extraVars)
+	Inventory = ag.ParseInventoryDirAll(InventoryDir)
+	Inventory.ParseAllInventoryVars()
+	HostList = Inventory.MatchHost(HostsPattern)
 
 	if *debug > 0 {
 		fmt.Fprintf(os.Stderr, "InventoryDir: %s - HostsPattern: %s - extraVars: %s\n", u.JsonDump(InventoryDir, ""), u.JsonDump(HostsPattern, ""), u.JsonDump(extraVars, ""))
@@ -118,11 +117,10 @@ func (_u *MyUser) SavePrivateKey() {
 	u.CheckErr(pem.Encode(file, pemBlock), "Write the PEM encoded data to the file")
 }
 
-func playHost(host *aini.Host) {
+func playHost(host *ag.Host) {
 	// Any func playXXX will take a host to do and u need to populate vars in the next three lines
-	Vars := u.StringMapToAnyMap(host.Vars)
+	Vars := host.Vars
 	maps.Copy(Vars, CommandlineVars) // Get command line opts override it if required
-	Vars = u.Must(ag.FlattenAllVars(Vars))
 	// End populate Vars. Vars can be used and pass around from now on
 
 	// Check current expired or not - check_cert_domain is like domain:port
@@ -216,5 +214,5 @@ func playHost(host *aini.Host) {
 }
 
 func main() { // This only play the first host. If multiple hosts resolved from the host pattern we can spawn go routine per hosts
-	playHost(MatchedHostsMap[HostList[0]])
+	playHost(Inventory.Hosts[HostList[0]])
 }

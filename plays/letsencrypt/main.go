@@ -67,6 +67,13 @@ func init() {
 	Inventory.ParseAllInventoryVars()
 	HostList = Inventory.MatchHost(HostsPattern)
 
+	for _, item := range extraVars {
+		_tmp := strings.Split(item, "=")
+		key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
+		println("Adding var from command line - " + key + "=" + val)
+		CommandlineVars[key] = val
+	}
+
 	if *debug > 0 {
 		fmt.Fprintf(os.Stderr, "InventoryDir: %s - HostsPattern: %s - extraVars: %s\n", u.JsonDump(InventoryDir, ""), u.JsonDump(HostsPattern, ""), u.JsonDump(extraVars, ""))
 		if *debug > 1 {

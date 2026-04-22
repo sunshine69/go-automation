@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	ag "github.com/sunshine69/automation-go/lib"
 	u "github.com/sunshine69/golang-tools/utils"
@@ -32,7 +31,7 @@ func LoadInventory() {
 		InventoryPath = "inventory/hosts.ini"
 	}
 	println("[INFO] InventoryPath: " + InventoryPath)
-	Inventory = u.Must(ag.ParseInventoryDir(InventoryPath))
+	Inventory = ag.ParseInventoryDirAll(InventoryPath)
 	Inventory.ParseAllInventoryVars()
 	HostList = Inventory.MatchHost(HostsPattern)
 
@@ -42,12 +41,7 @@ func LoadInventory() {
 
 	if len(os.Args) > 3 {
 		// Loads command line vars
-		for _, item := range os.Args[3:] {
-			_tmp := strings.Split(item, "=")
-			key, val := strings.TrimSpace(_tmp[0]), strings.TrimSpace(_tmp[1])
-			println("Adding var from command line - " + key + "=" + val)
-			CommandlineVars[key] = val
-		}
+		Inventory.SetFact("", os.Args[3:]...)
 	}
 }
 

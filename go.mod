@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/go-acme/lego/v4 v4.31.0
-	github.com/sunshine69/automation-go v0.0.0-20260422062041-140f615c7478
+	github.com/sunshine69/automation-go v0.0.0-20260422090428-d4c043747c1e
 	github.com/sunshine69/golang-tools/utils v0.0.0-20260410022601-6160ea7e287a
 	golang.org/x/sys v0.43.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -213,6 +213,6 @@ func playHost(host *ag.Host) {
 	// ... all done.
 }
 
-func main() { // This only play the first host. If multiple hosts resolved from the host pattern we can spawn go routine per hosts
+func main() { // This example only play the first host. If multiple hosts resolved from the host pattern we can spawn go routine per hosts
 	playHost(Inventory.Hosts[HostList[0]])
 }

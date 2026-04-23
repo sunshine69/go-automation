@@ -1,8 +1,7 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
+	"flag"
 
 	ag "github.com/sunshine69/automation-go/lib"
 	u "github.com/sunshine69/golang-tools/utils"
@@ -19,34 +18,14 @@ var (
 
 // Load inventory and return command line vars in Vars. Also populate global vars.
 // Per host will get its own vars later
-func LoadInventory() {
-	println("Args Length: ", len(os.Args))
-	if _, ok := CommandlineVars["inventory_dir"]; ok {
-		return // Not reload it again
-	}
-	HostsPattern = os.Args[1]
-	if len(os.Args) > 2 {
-		InventoryPath = os.Args[2]
-	} else {
-		InventoryPath = "inventory/hosts.ini"
-	}
+func LoadInventory(InventoryPath, hostPtn string, extraArg ...string) {
+	HostsPattern = hostPtn
+
 	println("[INFO] InventoryPath: " + InventoryPath)
 	Inventory = ag.ParseInventoryDirAll(InventoryPath)
 	Inventory.ParseAllInventoryVars()
 	HostList = Inventory.MatchHost(HostsPattern)
-
-	// Populate some default inventory vars. The specific host before use will update this Vars with ansible vars and flattern them
-	CommandlineVars["inventory_dir"] = filepath.Dir(InventoryPath)
-	CommandlineVars["playbook_dir"] = u.Must(os.Getwd())
-
-	if len(os.Args) > 3 {
-		// Loads command line vars
-		Inventory.SetFact("", os.Args[3:]...)
-	}
-}
-
-func init() {
-	LoadInventory()
+	Inventory.SetFact(HostsPattern, extraArg...)
 }
 
 // End inventory parser block
@@ -59,6 +38,14 @@ func playHost(host string) {
 }
 
 func main() {
+	invDir := flag.String("i", "", "Inventory dir")
+	hostPtn := flag.String("H", "", "Host pattern to match")
+	var extraVars u.ArrayFlags
+	flag.Var(&extraVars, "e", "Extra vars to pass to inventory data, like -e action=create_user -e var1=value1")
+
+	flag.Parse()
+	LoadInventory(*invDir, *hostPtn, extraVars...)
+
 	for _, h := range HostList { // can spawn go routine to run in parallel or exec in sequence
 		playHost(h)
 	}
